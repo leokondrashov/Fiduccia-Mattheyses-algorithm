@@ -1,18 +1,44 @@
-CXXFLAGS ?= -Wall -MMD -g# --coverage
+CXXFLAGS = -Wall -MMD
 
-.PHONY: all clean
+#
+# Project files
+#
+SRCS = graph.cc gain_container.cc FMpart.cc
+OBJS = $(SRCS:.cc=.o)
+EXE  = FMpart
 
-all: FMpart
+.PHONY: all clean release debug prep
+
+all: debug
+
+prep:
+	mkdir release debug
 
 clean:
-	rm *.o
-	rm *.d
-	rm *.gcov *.gcda *.gcno
-	rm *.dot
-	rm main
+	rm -rf release/
+	rm -rf debug/
+	rm -f *.d
+	rm -f *.gcov *.gcda *.gcno
+	rm -f *.dot
 
-test: graph.o gain_container.o
+release: CXXFLAGS += -O3 -DNDEBUG
+release: release/FMpart
 
-FMpart: graph.o gain_container.o
+release/$(EXE): $(addprefix release/, $(OBJS))
+	$(LINK.cc) $^ $(LOADLIBES) $(LDLIBS) -o $@
+	cp release/$(EXE) ./$(EXE)
+
+release/%.o: %.cc
+	$(COMPILE.cc) -o $@ $<	
+
+debug: CXXFLAGS += -g
+debug: debug/FMpart
+
+debug/$(EXE): $(addprefix debug/, $(OBJS))
+	$(LINK.cc) $^ $(LOADLIBES) $(LDLIBS) -o $@
+	cp debug/$(EXE) ./$(EXE)
+
+debug/%.o: %.cc
+	$(COMPILE.cc) -o $@ $<	
 
 -include *.d
