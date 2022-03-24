@@ -7,7 +7,7 @@ SRCS = graph.cc gain_container.cc FMpart.cc
 OBJS = $(SRCS:.cc=.o)
 EXE  = FMpart
 
-.PHONY: all clean release debug prep
+.PHONY: all clean release debug prep win
 
 all: debug
 
@@ -39,6 +39,13 @@ debug/$(EXE): $(addprefix debug/, $(OBJS))
 	cp debug/$(EXE) ./$(EXE)
 
 debug/%.o: %.cc
-	$(COMPILE.cc) -o $@ $<	
+	$(COMPILE.cc) -o $@ $<
+
+win: $(EXE).exe
+
+$(EXE).exe: CXX = x86_64-w64-mingw32-c++
+$(EXE).exe: CXXFLAGS = -O3 -DNDEBUG -static-libgcc -static-libstdc++
+$(EXE).exe: $(SRCS)
+	$(LINK.cc) $^ $(LOADLIBES) $(LDLIBS) -o $@
 
 -include *.d
