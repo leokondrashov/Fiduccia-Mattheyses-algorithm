@@ -154,9 +154,13 @@ void FM(const char *input, const char *output, const Parameters& p) {
 
         old_cost = current_cost;
         current_cost = FMpass(&g, &gc, p.disbalance);
-        std::cout << "Heartbeat: iteration=" << iteration_count <<
-            ", cost=" << current_cost << ", disbalance=" << g.get_disbalance() << '\n';
         ++iteration_count;
+
+        auto elapsed_time = (double) (std::clock() - start_time) / CLOCKS_PER_SEC;
+
+        std::cout << "Heartbeat: iteration=" << iteration_count <<
+            ", cost=" << current_cost << ", disbalance=" << g.get_disbalance() <<
+            ", time=" << elapsed_time << '\n';
 
         ON_DEBUG(
         if (p.dump)
@@ -222,6 +226,6 @@ int main(int argc, char **argv) {
         exit(1);
     }
 
-    const char *output_filename = (input_filename + std::string(".part.2")).c_str();
-    FM(input_filename, output_filename, p);
+    std::string output_filename = std::string(input_filename) + ".part.2";
+    FM(input_filename, output_filename.c_str(), p);
 }
