@@ -15,7 +15,7 @@ struct Move {
 
 class GainContainer {
 public:
-    GainContainer(unsigned max_gain, unsigned num_cells);
+    GainContainer(unsigned max_gain, unsigned num_cells, bool lifo);
     
     void update_gain(unsigned cell, int value);
     void initialize_gain(const Graph& g);
@@ -44,6 +44,8 @@ private:
 
     unsigned num_cells;
     unsigned num_locked = 0;
+
+    bool lifo;
 };
 
 #endif // GAIN_CONTAINER_H

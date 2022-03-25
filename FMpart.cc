@@ -130,16 +130,19 @@ struct Parameters {
     unsigned disbalance = 2;
     bool modified = false;
     const char *dump = nullptr;
-    const char *init_part = "random";
+    const char *init_part = "static";
 };
 
 void FM(const char *input, const char *output, const Parameters& p) {
     Graph g(input);
-    GainContainer gc(g.get_max_degree(), g.get_cell_count());
+    GainContainer gc(g.get_max_degree(), g.get_cell_count(), p.modified);
 
     g.set_partitionment(initial_partitionment(g.get_cell_count(), p.init_part));
     unsigned current_cost = g.get_partitionment_cost();
     unsigned old_cost = 0;
+
+    std::cout << "Initial: cost=" << current_cost << ", disbalance=" <<
+        g.get_disbalance() << '\n';
 
     unsigned iteration_count = 0;
 

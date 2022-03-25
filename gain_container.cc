@@ -12,12 +12,14 @@
 #define dassert(cond)
 #endif // NDEBUG
 
-GainContainer::GainContainer(unsigned max_gain, unsigned num_cells) :
+GainContainer::GainContainer(unsigned max_gain, unsigned num_cells, bool lifo) :
     MAX_GAIN(max_gain), num_cells(num_cells) {
     buckets[0].resize(max_gain * 2 + 1);
     buckets[1].resize(max_gain * 2 + 1);
 
     cells.resize(num_cells);
+
+    this->lifo = lifo;
 }
 
 void GainContainer::update_gain(unsigned cell, int value) {
@@ -94,13 +96,19 @@ Move GainContainer::best_move(int disbalance, int max_disbalance) const {
         m.gain = current_max_gain[0];
         m.from = 0;
         m.to = 1;
-        m.cell = buckets[0][m.gain + MAX_GAIN].front();
+        if (lifo)
+            m.cell = buckets[0][m.gain + MAX_GAIN].back();
+        else
+            m.cell = buckets[0][m.gain + MAX_GAIN].front();
     }
     if (is_part1_available && m.gain < current_max_gain[1]) {
         m.gain = current_max_gain[1];
         m.from = 1;
         m.to = 0;
-        m.cell = buckets[1][m.gain + MAX_GAIN].front();
+        if (lifo)
+            m.cell = buckets[1][m.gain + MAX_GAIN].back();
+        else
+            m.cell = buckets[1][m.gain + MAX_GAIN].front();
     }
 
     dassert(m.gain > (int) -MAX_GAIN);
