@@ -3,7 +3,6 @@
 #include <ctime>
 #include <fstream>
 #include <iostream>
-#include <memory>
 #include <random>
 #include <vector>
 
@@ -16,15 +15,6 @@ bool verbose_debug = false;
 #else
 #define ON_DEBUG(op) ;
 #endif // NDEBUG
-
-std::unique_ptr<char[]> create_output_file_name(const char* input) {
-    unsigned in_len = strlen(input);
-    std::unique_ptr<char[]> name(new char[in_len + sizeof(".part.2")]);
-    strcpy(name.get(), input);
-    strcpy(name.get() + in_len, ".part.2");
-
-    return name;
-}
 
 std::vector<bool> static_initial_partitionment(unsigned num_cells) {
     std::vector<bool> partitionment(num_cells);
@@ -48,13 +38,21 @@ std::vector<bool> random_initial_partitionment(unsigned num_cells) {
     return partitionment;
 }
 
+void print_usage() {
+    std::cout << "Usage: ./FMpart input_filename [--dump_file dump_file.dot] [-m]"
+        << "[--disbalance DISBALANCE] [--initial (static|random)]"
+        << '\n';
+}
+
 std::vector<bool> initial_partitionment(unsigned num_cells, const char *type) {
     if (strcmp(type, "static") == 0)
         return static_initial_partitionment(num_cells);
     if (strcmp(type, "random") == 0)
         return random_initial_partitionment(num_cells);
 
-    assert(0);
+    std::cout << "Unknown initial type " << type << '\n';
+    print_usage();
+    exit(1);
     return std::vector<bool>();
 }
 
@@ -179,20 +177,28 @@ void FM(const char *input, const char *output, const Parameters& p) {
         g.dump(p.dump);
 }
 
+void check_argc(int i, int argc) {
+    if (i >= argc) {
+        std::cout << "Not enough arguments\n";
+        print_usage();
+        exit(1);
+    }
+}
+
 int main(int argc, char **argv) {
     char *input_filename = nullptr;
     Parameters p;
     for (int i = 1; i < argc; ++i) {
         if (strcmp(argv[i], "--dump") == 0) {
-            assert(i + 1 < argc);
+            check_argc(i + 1, argc);
             p.dump = argv[i + 1];
             ++i;
         } else if (strcmp(argv[i], "--disbalance") == 0) {
-            assert(i + 1 < argc);
+            check_argc(i + 1, argc);
             p.disbalance = atoi(argv[i + 1]);
             ++i;
         } else if (strcmp(argv[i], "--initial") == 0) {
-            assert(i + 1 < argc);
+            check_argc(i + 1, argc);
             p.init_part = argv[i + 1];
             ++i;
         } else if (strcmp(argv[i], "-m") == 0) {
@@ -201,6 +207,10 @@ int main(int argc, char **argv) {
         } else if (strcmp(argv[i], "--verbose_debug") == 0) {
             verbose_debug = true;
 #endif // NDEBUG
+        } else if (argv[i][0] == '-') {
+            std::cout << "Unknown argument " << argv[i] << '\n';
+            print_usage();
+            exit(1);
         } else {
             input_filename = argv[i];
         }
@@ -208,11 +218,10 @@ int main(int argc, char **argv) {
 
     if (input_filename == nullptr) {
         std::cout << "Missing input filename" << '\n';
-        std::cout << "Usage: ./FMpart input_filename [--dump_file dump_file.dot] [-m]"
-            << '\n';
+        print_usage();
         exit(1);
     }
 
-    auto output_filename = create_output_file_name(input_filename);
-    FM(input_filename, output_filename.get(), p);
+    const char *output_filename = (input_filename + std::string(".part.2")).c_str();
+    FM(input_filename, output_filename, p);
 }
