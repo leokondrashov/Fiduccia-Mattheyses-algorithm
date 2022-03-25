@@ -21,6 +21,7 @@ public:
     void initialize_gain(const Graph& g);
     void lock_cell(unsigned i);
     bool empty() const { return num_locked == num_cells; }
+    bool empty_bucket(bool partition) const { return current_max_gain[partition] < (int) -MAX_GAIN; }
     
     Move best_move(int disbalance, int max_disbalance) const;
 

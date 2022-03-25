@@ -26,22 +26,36 @@ std::unique_ptr<char[]> create_output_file_name(const char* input) {
     return name;
 }
 
-std::vector<bool> initial_partitionment(unsigned num_cells) {
+std::vector<bool> static_initial_partitionment(unsigned num_cells) {
     std::vector<bool> partitionment(num_cells);
 
-    /*std::random_device rd;
+    for (unsigned i = 0; i < num_cells / 2; ++i)
+        partitionment[i] = true;
+
+    return partitionment;
+}
+
+std::vector<bool> random_initial_partitionment(unsigned num_cells) {
+    std::vector<bool> partitionment(num_cells);
+
+    std::random_device rd;
     std::mt19937 gen(rd());
     std::bernoulli_distribution rand(0.5);
 
     for (unsigned i = 0; i < num_cells; ++i)
         partitionment[i] = rand(gen);
 
-    return partitionment;*/
-
-    for (unsigned i = 0; i < num_cells / 2; ++i)
-        partitionment[i] = true;
-
     return partitionment;
+}
+
+std::vector<bool> initial_partitionment(unsigned num_cells, const char *type) {
+    if (strcmp(type, "static") == 0)
+        return static_initial_partitionment(num_cells);
+    if (strcmp(type, "random") == 0)
+        return random_initial_partitionment(num_cells);
+
+    assert(0);
+    return std::vector<bool>();
 }
 
 void update_gain(const Graph& g, GainContainer *gc, const Move& m) {
@@ -68,13 +82,12 @@ void update_gain(const Graph& g, GainContainer *gc, const Move& m) {
     }
 }
 
-unsigned FMpass(Graph *g, GainContainer *gc) {
+unsigned FMpass(Graph *g, GainContainer *gc, unsigned possible_disbalance) {
     gc->initialize_gain(*g);
 
     unsigned solution_cost = g->get_partitionment_cost();
     unsigned best_solution = (unsigned) -1;
 
-    unsigned possible_disbalance = 2;
     int cur_disbalance = g->get_disbalance();
     unsigned best_disbalance = possible_disbalance + 1;
 
@@ -113,11 +126,18 @@ unsigned FMpass(Graph *g, GainContainer *gc) {
     return best_solution;
 }
 
-void FM(const char *input, const char *output, const char *dump = nullptr) {
+struct Parameters {
+    unsigned disbalance = 2;
+    bool modified = false;
+    const char *dump = nullptr;
+    const char *init_part = "random";
+};
+
+void FM(const char *input, const char *output, const Parameters& p) {
     Graph g(input);
     GainContainer gc(g.get_max_degree(), g.get_cell_count());
 
-    g.set_partitionment(initial_partitionment(g.get_cell_count()));
+    g.set_partitionment(initial_partitionment(g.get_cell_count(), p.init_part));
     unsigned current_cost = g.get_partitionment_cost();
     unsigned old_cost = 0;
 
@@ -127,43 +147,53 @@ void FM(const char *input, const char *output, const char *dump = nullptr) {
 
     do {
         ON_DEBUG(
-        if (dump)
-            g.dump(dump);
+        if (p.dump)
+            g.dump(p.dump);
         )
 
         old_cost = current_cost;
-        current_cost = FMpass(&g, &gc);
+        current_cost = FMpass(&g, &gc, p.disbalance);
         std::cout << "Heartbeat: iteration=" << iteration_count <<
             ", cost=" << current_cost << ", disbalance=" << g.get_disbalance() << '\n';
         ++iteration_count;
 
         ON_DEBUG(
-        if (dump)
-            system(("dotty " + std::string(dump)).c_str());
+        if (p.dump)
+            system(("dotty " + std::string(p.dump)).c_str());
         )
     } while (current_cost < old_cost);
 
     std::clock_t end_time = std::clock();
 
-    std::cout << "Results: time=" << (double) (end_time - start_time) / CLOCKS_PER_SEC << ", " <<
-        "iterations=" << iteration_count << ", " <<
-        "cost=" << current_cost << ", " <<
-        "disbalance=" << g.get_disbalance() << '\n';
+    std::cout << "Results: time=" << (double) (end_time - start_time) / CLOCKS_PER_SEC <<
+        ", iterations=" << iteration_count <<
+        ", cost=" << current_cost <<
+        ", disbalance=" << g.get_disbalance() << '\n';
 
     g.print_partitionment(output);
 
-    if (dump)
-        g.dump(dump);
+    if (p.dump)
+        g.dump(p.dump);
 }
 
 int main(int argc, char **argv) {
     char *input_filename = nullptr;
-    char *dump_filename = nullptr;
+    Parameters p;
     for (int i = 1; i < argc; ++i) {
         if (strcmp(argv[i], "--dump") == 0) {
             assert(i + 1 < argc);
-            dump_filename = argv[i + 1];
+            p.dump = argv[i + 1];
             ++i;
+        } else if (strcmp(argv[i], "--disbalance") == 0) {
+            assert(i + 1 < argc);
+            p.disbalance = atoi(argv[i + 1]);
+            ++i;
+        } else if (strcmp(argv[i], "--initial") == 0) {
+            assert(i + 1 < argc);
+            p.init_part = argv[i + 1];
+            ++i;
+        } else if (strcmp(argv[i], "-m") == 0) {
+            p.modified = true;
 #ifndef NDEBUG
         } else if (strcmp(argv[i], "--verbose_debug") == 0) {
             verbose_debug = true;
@@ -175,10 +205,11 @@ int main(int argc, char **argv) {
 
     if (input_filename == nullptr) {
         std::cout << "Missing input filename" << '\n';
-        std::cout << "Usage: ./FMpart input_filename [--dump_file dump_file.dot] [-m]" << '\n';
+        std::cout << "Usage: ./FMpart input_filename [--dump_file dump_file.dot] [-m]"
+            << '\n';
         exit(1);
     }
 
     auto output_filename = create_output_file_name(input_filename);
-    FM(input_filename, output_filename.get(), dump_filename);
+    FM(input_filename, output_filename.get(), p);
 }

@@ -87,8 +87,8 @@ Move GainContainer::best_move(int disbalance, int max_disbalance) const {
 
     // handles the case if current disbalance is unsatisfactory:
     // chooses bigger partition to move cell from
-    bool is_part0_available = disbalance > -(max_disbalance - 1);
-    bool is_part1_available = disbalance < (max_disbalance - 1);
+    bool is_part0_available = disbalance > -(max_disbalance - 1) || empty_bucket(1);
+    bool is_part1_available = disbalance < (max_disbalance - 1) || empty_bucket(0);
     
     if (is_part0_available && m.gain < current_max_gain[0]) {
         m.gain = current_max_gain[0];
