@@ -91,6 +91,13 @@ unsigned FMpass(Graph *g, GainContainer *gc, unsigned possible_disbalance) {
 
     std::vector<bool> best_partitionment;
 
+    ON_DEBUG(
+        std::cout << "new pass, solution cost = " << solution_cost <<
+            ", disbalance = " << cur_disbalance << '\n';
+        gc->dump(std::cout);
+        getchar();
+    )
+
     while (!gc->empty()) {
         Move m = gc->best_move(g->get_disbalance(), possible_disbalance);
 
@@ -113,7 +120,7 @@ unsigned FMpass(Graph *g, GainContainer *gc, unsigned possible_disbalance) {
 
         ON_DEBUG(
         std::cout << m.cell << " moved, solution cost = " << solution_cost <<
-           ", disbalance = " << cur_disbalance << '\n';
+            ", disbalance = " << cur_disbalance << '\n';
         gc->dump(std::cout);
         getchar();
         )

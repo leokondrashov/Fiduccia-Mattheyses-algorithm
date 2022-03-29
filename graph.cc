@@ -173,6 +173,12 @@ void Graph::move_cell(unsigned i) {
     disbalance += partitionment[i] ? -2 : 2; // decrease if we move to partition 1
                                              // increase if we move to partition 0
                                              // can be negative
+
+#ifndef NDEBUG
+    int old_disbalance = disbalance; // check for correct disbalance counting
+    update_disbalance();
+    assert(old_disbalance == disbalance);
+#endif // NDEBUG
 }
 
 void Graph::update_disbalance() {

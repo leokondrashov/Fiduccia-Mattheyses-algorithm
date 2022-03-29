@@ -42,6 +42,10 @@ private:
     const unsigned MAX_GAIN;
     int current_max_gain[2];
 
+    auto& gain_bucket(bool part, int gain) { return buckets[part][gain + MAX_GAIN]; }
+    const auto& gain_bucket(bool part, int gain) const
+        { return buckets[part][gain + MAX_GAIN]; }
+
     unsigned num_cells;
     unsigned num_locked = 0;
 

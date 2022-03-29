@@ -30,9 +30,9 @@ void GainContainer::update_gain(unsigned cell, int value) {
 
     int new_gain = info.gain + value;
 
-    buckets[info.partition][info.gain + MAX_GAIN].erase(cells[cell].it);
-    buckets[info.partition][new_gain + MAX_GAIN].push_back(cell);
-    info.it = --buckets[info.partition][new_gain + MAX_GAIN].end(); // iterator to the last element
+    gain_bucket(info.partition, info.gain).erase(cells[cell].it);
+    gain_bucket(info.partition, new_gain).push_front(cell);
+    info.it = gain_bucket(info.partition, new_gain).begin(); // iterator to the last element
     assert(*(info.it) == cell);
 
     if (new_gain > current_max_gain[info.partition]) // increasing max gain
@@ -63,8 +63,9 @@ void GainContainer::initialize_gain(const Graph& g) {
                 --info.gain;
         }
 
-        buckets[info.partition][info.gain + MAX_GAIN].push_back(i);
-        info.it = --buckets[info.partition][info.gain + MAX_GAIN].end();
+        gain_bucket(info.partition, info.gain).push_front(i);
+        info.it = gain_bucket(info.partition, info.gain).begin();
+        assert(*(info.it) == i);
     }
     
     update_max_gain(MAX_GAIN, 0);
@@ -78,7 +79,7 @@ void GainContainer::lock_cell(unsigned i) {
     CellInfo& info = cells[i];
 
     info.locked = true;
-    buckets[info.partition][info.gain + MAX_GAIN].erase(info.it);
+    gain_bucket(info.partition, info.gain).erase(info.it);
     ++num_locked;
     
     update_max_gain(current_max_gain[info.partition], info.partition);
@@ -97,18 +98,18 @@ Move GainContainer::best_move(int disbalance, int max_disbalance) const {
         m.from = 0;
         m.to = 1;
         if (lifo)
-            m.cell = buckets[0][m.gain + MAX_GAIN].back();
+            m.cell = gain_bucket(0, m.gain).front();
         else
-            m.cell = buckets[0][m.gain + MAX_GAIN].front();
+            m.cell = gain_bucket(0, m.gain).back();
     }
     if (is_part1_available && m.gain < current_max_gain[1]) {
         m.gain = current_max_gain[1];
         m.from = 1;
         m.to = 0;
         if (lifo)
-            m.cell = buckets[1][m.gain + MAX_GAIN].back();
+            m.cell = gain_bucket(1, m.gain).front();
         else
-            m.cell = buckets[1][m.gain + MAX_GAIN].front();
+            m.cell = gain_bucket(1, m.gain).back();
     }
 
     dassert(m.gain > (int) -MAX_GAIN);
@@ -119,7 +120,7 @@ Move GainContainer::best_move(int disbalance, int max_disbalance) const {
 // descending search for next max gain
 // -MAX_GAIN - 1 if not found: renders this partition useless
 void GainContainer::update_max_gain(int max_gain, bool partition) {
-    while (max_gain >= (int) -MAX_GAIN && buckets[partition][max_gain + MAX_GAIN].empty())
+    while (max_gain >= (int) -MAX_GAIN && gain_bucket(partition, max_gain).empty())
         --max_gain;
 
     current_max_gain[partition] = max_gain;
@@ -130,9 +131,9 @@ void GainContainer::dump(std::ostream& out) const {
     out << "\tmax gain: " << current_max_gain[0] << " " << current_max_gain[1] << '\n';
     for (int partition = 0; partition < 2; ++partition) {
         out << "\t[" << partition << "]:\n";
-        for (unsigned i = 0; i < buckets[partition].size(); ++i) {
-            out << "\t\t[" << (int) (i - MAX_GAIN) << "]:";
-            for (auto cell: buckets[partition][i])
+        for (int i = -MAX_GAIN; i < (int) MAX_GAIN; ++i) {
+            out << "\t\t[" << i << "]:";
+            for (auto cell: gain_bucket(partition, i))
                 out << ' ' << cell;
             out << '\n';
         }
@@ -144,6 +145,6 @@ void GainContainer::dump(std::ostream& out) const {
         if (cells[i].locked)
             out << "locked\n";
         else
-           out << "gain=" << cells[i].gain << " *it=" << *(cells[i].it) << '\n';
+            out << "gain=" << cells[i].gain << " *it=" << *(cells[i].it) << '\n';
     }
 }
