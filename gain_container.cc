@@ -131,7 +131,7 @@ void GainContainer::dump(std::ostream& out) const {
     out << "\tmax gain: " << current_max_gain[0] << " " << current_max_gain[1] << '\n';
     for (int partition = 0; partition < 2; ++partition) {
         out << "\t[" << partition << "]:\n";
-        for (int i = -MAX_GAIN; i < (int) MAX_GAIN; ++i) {
+        for (int i = -MAX_GAIN; i <= (int) MAX_GAIN; ++i) {
             out << "\t\t[" << i << "]:";
             for (auto cell: gain_bucket(partition, i))
                 out << ' ' << cell;

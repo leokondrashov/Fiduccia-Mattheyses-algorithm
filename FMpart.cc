@@ -39,7 +39,7 @@ std::vector<bool> random_initial_partitionment(unsigned num_cells) {
 }
 
 void print_usage() {
-    std::cout << "Usage: ./FMpart input_filename [--dump_file dump_file.dot] [-m]"
+    std::cout << "Usage: ./FMpart input_filename [--dump dump_file.dot] [-m]"
         << "[--disbalance DISBALANCE] [--initial (static|random)]"
         << '\n';
 }
@@ -107,6 +107,7 @@ unsigned FMpass(Graph *g, GainContainer *gc, unsigned possible_disbalance) {
 
         g->move_cell(m.cell);
         cur_disbalance = g->get_disbalance();
+
         assert(solution_cost == g->get_partitionment_cost());
 
         if (abs(cur_disbalance) <= possible_disbalance &&
